@@ -86,6 +86,25 @@ function buildFilename(pattern, tab) {
   return expandFilenamePattern(pattern, { domain, date, time, title: tab.title });
 }
 
+function buildPdfPageFilename(pattern, tab, pageNumber, totalPages) {
+  const base = buildFilename(pattern, tab);
+  const dot = base.lastIndexOf('.');
+  const stem = dot === -1 ? base : base.slice(0, dot);
+  const ext = dot === -1 ? '.png' : base.slice(dot);
+  const page = String(pageNumber).padStart(String(totalPages).length, '0');
+  return `${stem}-page-${page}${ext}`;
+}
+
+function arrayBufferToDataUrl(buffer, mimeType) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`;
+}
+
 const DOWNLOAD_COMPLETION_TIMEOUT_MS = 30000;
 
 function waitForDownloadCompletion(downloadId) {
@@ -144,6 +163,58 @@ function waitForDownloadCompletion(downloadId) {
   });
 }
 
+async function runPdfCapture(tabId, tab, capture, settings) {
+  const response = await fetch(tab.url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch the PDF (HTTP ${response.status}).`);
+  }
+  const pdfDataUrl = arrayBufferToDataUrl(await response.arrayBuffer(), 'application/pdf');
+
+  await ensureOffscreenDocument();
+  checkAborted(capture);
+
+  const openResult = await chrome.runtime.sendMessage({ type: MessageType.PDF_OPEN, dataUrl: pdfDataUrl });
+  if (!openResult?.ok) {
+    throw new Error(openResult?.error || 'Failed to open the PDF for rendering.');
+  }
+
+  const totalPages = openResult.numPages;
+
+  for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+    checkAborted(capture);
+
+    const renderResult = await chrome.runtime.sendMessage({
+      type: MessageType.PDF_RENDER_PAGE,
+      pageNumber,
+      scale: settings.exportScale,
+    });
+    if (!renderResult?.ok) {
+      throw new Error(renderResult?.error || `Failed to render PDF page ${pageNumber}.`);
+    }
+
+    const filename = buildPdfPageFilename(settings.filenamePattern, tab, pageNumber, totalPages);
+    const downloadId = await chrome.downloads.download({
+      url: renderResult.blobUrl,
+      filename,
+      saveAs: false,
+    });
+    await waitForDownloadCompletion(downloadId);
+
+    notifySidePanel({
+      type: MessageType.CAPTURE_PROGRESS,
+      tabId,
+      step: pageNumber,
+      total: totalPages,
+    });
+  }
+
+  notifySidePanel({
+    type: MessageType.CAPTURE_COMPLETE,
+    tabId,
+    filename: `${totalPages} page${totalPages === 1 ? '' : 's'} as PNG`,
+  });
+}
+
 async function runCapture(tabId) {
   if (activeCaptures.has(tabId)) return;
   const capture = { aborted: false, abortReason: null };
@@ -164,6 +235,11 @@ async function runCapture(tabId) {
 
     const initialGeometry = await sendToTab(tabId, { type: MessageType.MEASURE });
     checkAborted(capture);
+
+    if (initialGeometry.contentType === 'application/pdf') {
+      await runPdfCapture(tabId, tab, capture, settings);
+      return;
+    }
 
     const initialCanvas = computeCanvasDimensions(
       initialGeometry.scrollWidth,

@@ -23,6 +23,8 @@ test('MessageType defines every message used by the capture protocol', () => {
     'STITCH_START',
     'STITCH_SLICE',
     'STITCH_FINALIZE',
+    'PDF_OPEN',
+    'PDF_RENDER_PAGE',
     'CAPTURE_PROGRESS',
     'CAPTURE_COMPLETE',
     'CAPTURE_ERROR',

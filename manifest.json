@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Capture an entire page as a single PNG, saved directly to Downloads.",
   "permissions": ["activeTab", "scripting", "downloads", "storage", "sidePanel", "offscreen"],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background/background.js",
     "type": "module"

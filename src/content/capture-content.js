@@ -33,6 +33,13 @@
       innerWidth: window.innerWidth,
       innerHeight: window.innerHeight,
       devicePixelRatio: window.devicePixelRatio,
+      // Chrome's built-in PDF viewer renders the document in a guest frame
+      // that isn't exposed to this script's DOM at all — document.body is
+      // empty and scrollHeight always equals innerHeight, so scrolling and
+      // slicing can never see real content. contentType is the one reliable
+      // signal (works for any URL shape, not just ones ending in .pdf) that
+      // tells the background script to render the PDF itself instead.
+      contentType: document.contentType,
     };
   }
 

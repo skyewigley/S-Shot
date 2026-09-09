@@ -1,7 +1,11 @@
 import { MessageType } from '../shared/messages.js';
+import * as pdfjsLib from '../vendor/pdfjs/pdf.min.mjs';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('src/vendor/pdfjs/pdf.worker.min.mjs');
 
 const canvasEl = document.getElementById('stitch-canvas');
 let ctx = null;
+let pdfDocument = null;
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
@@ -19,10 +23,40 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         .then((result) => sendResponse(result))
         .catch((error) => sendResponse({ error: error.message }));
       return true;
+    case MessageType.PDF_OPEN:
+      openPdf(message.dataUrl)
+        .then((result) => sendResponse(result))
+        .catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
+    case MessageType.PDF_RENDER_PAGE:
+      renderPdfPage(message.pageNumber, message.scale)
+        .then((result) => sendResponse(result))
+        .catch((error) => sendResponse({ ok: false, error: error.message }));
+      return true;
     default:
       return false;
   }
 });
+
+async function openPdf(dataUrl) {
+  const buffer = await fetch(dataUrl).then((response) => response.arrayBuffer());
+  pdfDocument = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  return { ok: true, numPages: pdfDocument.numPages };
+}
+
+async function renderPdfPage(pageNumber, scale) {
+  const page = await pdfDocument.getPage(pageNumber);
+  const viewport = page.getViewport({ scale });
+  canvasEl.width = viewport.width;
+  canvasEl.height = viewport.height;
+  ctx = canvasEl.getContext('2d');
+  // intent: 'print' skips pdf.js's default requestAnimationFrame-paced
+  // render loop. An offscreen document is never composited/shown, so rAF
+  // callbacks never fire there — the default intent would hang forever.
+  await page.render({ canvasContext: ctx, viewport, intent: 'print' }).promise;
+  const { blobUrl } = await finalize();
+  return { ok: true, blobUrl, width: viewport.width, height: viewport.height };
+}
 
 function startCanvas(width, height) {
   canvasEl.width = width;

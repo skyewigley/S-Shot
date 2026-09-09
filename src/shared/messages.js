@@ -9,6 +9,8 @@ export const MessageType = Object.freeze({
   STITCH_START: 'stitch-start',
   STITCH_SLICE: 'stitch-slice',
   STITCH_FINALIZE: 'stitch-finalize',
+  PDF_OPEN: 'pdf-open',
+  PDF_RENDER_PAGE: 'pdf-render-page',
   CAPTURE_PROGRESS: 'capture-progress',
   CAPTURE_COMPLETE: 'capture-complete',
   CAPTURE_ERROR: 'capture-error',
