@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <h1>K-shot</h1>
+    <button id="capture-btn">Capture full page</button>
+    <p id="status"></p>
+
+    <form id="settings-form">
+      <label>
+        Filename pattern
+        <input type="text" id="filenamePattern" />
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoHideStickyHeaders" />
+        Auto-hide sticky headers after first slice
+      </label>
+      <label>
+        Capture delay (ms)
+        <input type="number" id="captureDelayMs" min="0" step="50" />
+      </label>
+      <label>
+        Export scale
+        <select id="exportScale">
+          <option value="1">1x</option>
+          <option value="2">2x (device pixel ratio)</option>
+        </select>
+      </label>
+      <label>
+        Capture mode
+        <select id="captureMode">
+          <option value="fullPage">Full page</option>
+          <option value="viewport">Visible viewport only</option>
+        </select>
+      </label>
+    </form>
+
+    <script type="module" src="sidepanel.js"></script>
+  </body>
+</html>
