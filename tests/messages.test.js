@@ -15,6 +15,7 @@ test('MessageType defines every message used by the capture protocol', () => {
   const expectedKeys = [
     'START_CAPTURE',
     'MEASURE',
+    'REMEASURE',
     'PREPARE_CAPTURE',
     'HIDE_STICKY',
     'SCROLL_TO',

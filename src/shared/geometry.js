@@ -27,6 +27,13 @@ export function scaleSliceToCanvas(slice, dpr, exportScale) {
   };
 }
 
+export function computeSourceCrop(slice, actualScrollY, dpr) {
+  return {
+    sourceY: Math.round((slice.y - actualScrollY) * dpr),
+    sourceHeight: Math.round(slice.height * dpr),
+  };
+}
+
 export const CANVAS_DIMENSION_LIMIT = 32767;
 
 export function exceedsCanvasLimit(width, height, limit = CANVAS_DIMENSION_LIMIT) {

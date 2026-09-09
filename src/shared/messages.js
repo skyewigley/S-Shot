@@ -1,6 +1,7 @@
 export const MessageType = Object.freeze({
   START_CAPTURE: 'start-capture',
   MEASURE: 'measure',
+  REMEASURE: 'remeasure',
   PREPARE_CAPTURE: 'prepare-capture',
   HIDE_STICKY: 'hide-sticky',
   SCROLL_TO: 'scroll-to',

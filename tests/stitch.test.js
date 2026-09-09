@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   computeSliceOffsets,
   computeCanvasDimensions,
+  computeSourceCrop,
   scaleSliceToCanvas,
   exceedsCanvasLimit,
   CANVAS_DIMENSION_LIMIT,
@@ -53,6 +54,16 @@ test('scaleSliceToCanvas scales a CSS-pixel slice into canvas pixel space', () =
 test('scaleSliceToCanvas rounds fractional results', () => {
   const scaled = scaleSliceToCanvas({ y: 333, height: 111 }, 1.5, 1);
   assert.deepEqual(scaled, { y: 500, height: 167 });
+});
+
+test('computeSourceCrop is a no-op crop when the actual scroll position matches the intended slice offset', () => {
+  const crop = computeSourceCrop({ y: 1000, height: 1000 }, 1000, 2);
+  assert.deepEqual(crop, { sourceY: 0, sourceHeight: 2000 });
+});
+
+test('computeSourceCrop crops the top of the source image when scrollTo clamped short of the intended offset', () => {
+  const crop = computeSourceCrop({ y: 2000, height: 500 }, 1500, 1);
+  assert.deepEqual(crop, { sourceY: 500, sourceHeight: 500 });
 });
 
 test('exceedsCanvasLimit is false under the ceiling and true at/above it', () => {
