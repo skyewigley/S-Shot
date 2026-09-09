@@ -5,7 +5,10 @@ const RESTRICTED_URL_PATTERN = /^(chrome|chrome-extension|edge|about|devtools):\
 const WEB_STORE_PATTERN = /^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/i;
 
 const captureBtn = document.getElementById('capture-btn');
-const statusEl = document.getElementById('status');
+const statusTextEl = document.getElementById('status-text');
+const statusIconEl = document.getElementById('status-icon');
+const progressTrackEl = document.getElementById('progress-track');
+const progressBarEl = document.getElementById('progress-bar');
 const fields = {
   filenamePattern: document.getElementById('filenamePattern'),
   autoHideStickyHeaders: document.getElementById('autoHideStickyHeaders'),
@@ -15,6 +18,23 @@ const fields = {
 };
 
 let currentTabId = null;
+
+const CHECK_ICON =
+  '<svg class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>';
+const ERROR_ICON =
+  '<svg class="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" /><path stroke-linecap="round" d="M12 8v5M12 16h.01" /></svg>';
+
+function setStatus({ icon = '', text = '', progress = null }) {
+  statusIconEl.innerHTML = icon;
+  statusTextEl.textContent = text;
+  if (progress) {
+    progressTrackEl.classList.remove('hidden');
+    progressBarEl.style.width = `${(progress.step / progress.total) * 100}%`;
+  } else {
+    progressTrackEl.classList.add('hidden');
+    progressBarEl.style.width = '0%';
+  }
+}
 
 async function refreshActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -51,19 +71,22 @@ function wireSettingsPersistence() {
 captureBtn.addEventListener('click', () => {
   if (currentTabId == null) return;
   captureBtn.disabled = true;
-  statusEl.textContent = 'Capturing...';
+  setStatus({ text: 'Capturing...' });
   chrome.runtime.sendMessage({ type: MessageType.START_CAPTURE, tabId: currentTabId });
 });
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message.tabId !== currentTabId) return;
   if (message.type === MessageType.CAPTURE_PROGRESS) {
-    statusEl.textContent = `Capturing slice ${message.step}/${message.total}...`;
+    setStatus({
+      text: `Capturing ${message.step}/${message.total}...`,
+      progress: { step: message.step, total: message.total },
+    });
   } else if (message.type === MessageType.CAPTURE_COMPLETE) {
-    statusEl.textContent = `Saved ${message.filename}`;
+    setStatus({ icon: CHECK_ICON, text: `Saved ${message.filename}` });
     captureBtn.disabled = false;
   } else if (message.type === MessageType.CAPTURE_ERROR) {
-    statusEl.textContent = `Error: ${message.message}`;
+    setStatus({ icon: ERROR_ICON, text: `Error: ${message.message}` });
     captureBtn.disabled = false;
   }
 });
