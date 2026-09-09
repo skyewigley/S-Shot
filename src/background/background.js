@@ -11,6 +11,7 @@ const RESTRICTED_URL_PATTERN = /^(chrome|chrome-extension|edge|about|devtools):\
 const WEB_STORE_PATTERN = /^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/i;
 
 const activeCaptures = new Map(); // tabId -> { aborted: boolean }
+const injectedTabs = new Set(); // tabIds whose isolated world already has capture-content.js loaded
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -26,12 +27,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
+  injectedTabs.delete(tabId);
   abortCapture(tabId, 'Tab was closed during capture.');
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
-  if (changeInfo.status === 'loading' && activeCaptures.has(tabId)) {
-    abortCapture(tabId, 'Tab navigated during capture.');
+  if (changeInfo.status === 'loading') {
+    injectedTabs.delete(tabId);
+    if (activeCaptures.has(tabId)) {
+      abortCapture(tabId, 'Tab navigated during capture.');
+    }
   }
 });
 
@@ -97,10 +102,13 @@ async function runCapture(tabId) {
 
     const settings = await loadSettings();
 
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['src/content/capture-content.js'],
-    });
+    if (!injectedTabs.has(tabId)) {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['src/content/capture-content.js'],
+      });
+      injectedTabs.add(tabId);
+    }
 
     const geometry = await sendToTab(tabId, { type: MessageType.MEASURE });
     checkAborted(capture);
