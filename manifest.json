@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "K-shot Full Page Screenshot",
+  "version": "1.0.0",
+  "description": "Capture an entire page as a single PNG, saved directly to Downloads.",
+  "permissions": ["activeTab", "scripting", "downloads", "storage", "sidePanel", "offscreen"],
+  "background": {
+    "service_worker": "src/background/background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+  "action": {
+    "default_title": "K-shot: open side panel"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

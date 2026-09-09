@@ -1,0 +1,10 @@
+{
+  "name": "k-shot",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Full-page screenshot Chrome extension",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}
