@@ -86,19 +86,61 @@ function buildFilename(pattern, tab) {
   return expandFilenamePattern(pattern, { domain, date, time, title: tab.title });
 }
 
+const DOWNLOAD_COMPLETION_TIMEOUT_MS = 30000;
+
 function waitForDownloadCompletion(downloadId) {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId;
+
+    function cleanup() {
+      chrome.downloads.onChanged.removeListener(listener);
+      clearTimeout(timeoutId);
+    }
+
+    function settleComplete() {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    }
+
+    function settleError(message) {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error(message));
+    }
+
     function listener(delta) {
       if (delta.id !== downloadId || !delta.state) return;
       if (delta.state.current === 'complete') {
-        chrome.downloads.onChanged.removeListener(listener);
-        resolve();
+        settleComplete();
       } else if (delta.state.current === 'interrupted') {
-        chrome.downloads.onChanged.removeListener(listener);
-        reject(new Error(`Download failed: ${delta.error?.current || 'interrupted'}`));
+        settleError(`Download failed: ${delta.error?.current || 'interrupted'}`);
       }
     }
+
     chrome.downloads.onChanged.addListener(listener);
+
+    timeoutId = setTimeout(() => {
+      settleError('Timed out waiting for the download to finish.');
+    }, DOWNLOAD_COMPLETION_TIMEOUT_MS);
+
+    // chrome.downloads.download() resolves once the download starts, not
+    // once it finishes — a small PNG can reach a terminal state inside that
+    // round-trip, before the onChanged listener above was attached, and
+    // that event would otherwise be lost forever. Check current state
+    // immediately as a fallback for that race.
+    chrome.downloads.search({ id: downloadId }, (results) => {
+      const item = results && results[0];
+      if (!item) return;
+      if (item.state === 'complete') {
+        settleComplete();
+      } else if (item.state === 'interrupted') {
+        settleError(`Download failed: ${item.error || 'interrupted'}`);
+      }
+    });
   });
 }
 

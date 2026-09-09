@@ -92,11 +92,11 @@
 
   async function triggerLazyContent() {
     const { scrollHeight } = document.documentElement;
-    window.scrollTo(0, scrollHeight);
+    window.scrollTo({ left: 0, top: scrollHeight, behavior: 'instant' });
     window.dispatchEvent(new Event('scroll'));
     window.dispatchEvent(new Event('resize'));
     await wait(350);
-    window.scrollTo(0, 0);
+    window.scrollTo({ left: 0, top: 0, behavior: 'instant' });
     window.dispatchEvent(new Event('scroll'));
     await wait(100);
   }
@@ -109,7 +109,11 @@
   }
 
   function scrollTo(y) {
-    window.scrollTo(0, y);
+    // behavior: 'instant' forces an immediate jump regardless of the page's
+    // own CSS scroll-behavior (e.g. `scroll-behavior: smooth`) — without it,
+    // a smooth-scrolling page would still be animating toward y when
+    // window.scrollY is read below, reporting a stale actualY.
+    window.scrollTo({ left: 0, top: y, behavior: 'instant' });
     window.dispatchEvent(new Event('scroll'));
     return { ok: true, actualY: window.scrollY };
   }
@@ -117,7 +121,7 @@
   function restore() {
     restoreFrozenElements();
     restoreScrollbars();
-    window.scrollTo(originalScrollX, originalScrollY);
+    window.scrollTo({ left: originalScrollX, top: originalScrollY, behavior: 'instant' });
     return { ok: true };
   }
 

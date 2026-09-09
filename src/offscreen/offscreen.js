@@ -32,7 +32,27 @@ function startCanvas(width, height) {
 
 async function drawSlice(dataUrl, sourceY, sourceHeight, destY, destHeight) {
   const image = await loadImage(dataUrl);
-  ctx.drawImage(image, 0, sourceY, image.naturalWidth, sourceHeight, 0, destY, canvasEl.width, destHeight);
+  // Defensive clamp: sourceY/sourceHeight are computed from the scroll
+  // position the content script reports reaching. If that ever falls
+  // outside the captured image (should not happen now that scrollTo uses
+  // behavior: 'instant', but this guards against any future regression),
+  // clamp to the image's real bounds instead of silently painting nothing.
+  const clampedSourceY = Math.max(0, Math.min(sourceY, image.naturalHeight));
+  const clampedSourceHeight = Math.max(
+    0,
+    Math.min(sourceHeight, image.naturalHeight - clampedSourceY),
+  );
+  ctx.drawImage(
+    image,
+    0,
+    clampedSourceY,
+    image.naturalWidth,
+    clampedSourceHeight,
+    0,
+    destY,
+    canvasEl.width,
+    destHeight,
+  );
 }
 
 function loadImage(dataUrl) {
