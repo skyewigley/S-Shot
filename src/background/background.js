@@ -9,6 +9,7 @@ import {
   computeCaptureHeight,
   limitPageCount,
 } from '../shared/geometry.js';
+import { CSS_PIXELS_PER_INCH } from '../shared/png-metadata.js';
 
 const RESTRICTED_URL_PATTERN = /^(chrome|chrome-extension|edge|about|devtools):\/\//i;
 const WEB_STORE_PATTERN = /^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/i;
@@ -316,6 +317,7 @@ async function runCapture(tabId) {
       type: MessageType.STITCH_START,
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
+      pixelsPerInch: CSS_PIXELS_PER_INCH * geometry.devicePixelRatio * settings.exportScale,
     });
 
     for (let i = 0; i < slices.length; i++) {

@@ -1,5 +1,6 @@
 import { MessageType } from '../shared/messages.js';
 import { saveCaptureImage } from '../shared/capture-store.js';
+import { addPngMetadata, PDF_POINTS_PER_INCH } from '../shared/png-metadata.js';
 import * as pdfjsLib from '../vendor/pdfjs/pdf.min.mjs';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('src/vendor/pdfjs/pdf.worker.min.mjs');
@@ -7,11 +8,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('src/vendor/pdfjs
 const canvasEl = document.getElementById('stitch-canvas');
 let ctx = null;
 let pdfDocument = null;
+// DPI written into the PNG's pHYs chunk so editors size it correctly.
+let pixelsPerInch = 96;
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
     case MessageType.STITCH_START:
-      startCanvas(message.canvasWidth, message.canvasHeight);
+      startCanvas(message.canvasWidth, message.canvasHeight, message.pixelsPerInch);
       sendResponse({ ok: true });
       return false;
     case MessageType.STITCH_SLICE:
@@ -51,6 +54,7 @@ async function renderPdfPage(pageNumber, scale, preview) {
   canvasEl.width = viewport.width;
   canvasEl.height = viewport.height;
   ctx = canvasEl.getContext('2d');
+  pixelsPerInch = PDF_POINTS_PER_INCH * scale;
   // intent: 'print' skips pdf.js's default requestAnimationFrame-paced
   // render loop. An offscreen document is never composited/shown, so rAF
   // callbacks never fire there — the default intent would hang forever.
@@ -59,10 +63,15 @@ async function renderPdfPage(pageNumber, scale, preview) {
   return { ok: true, blobUrl, width: viewport.width, height: viewport.height };
 }
 
-function startCanvas(width, height) {
+function startCanvas(width, height, ppi) {
   canvasEl.width = width;
   canvasEl.height = height;
   ctx = canvasEl.getContext('2d');
+  pixelsPerInch = ppi;
+  // Opaque base: any pixel a slice fails to cover (rounding seams) stays
+  // white instead of transparent, which editors show as holes.
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
 }
 
 async function drawSlice(dataUrl, sourceY, sourceHeight, destY, destHeight) {
@@ -117,7 +126,9 @@ function canvasToBlob() {
 // capture store for the preview page instead of being handed back as a blob:
 // URL, since that URL dies with this offscreen document.
 async function finalize(preview) {
-  const blob = await canvasToBlob();
+  const rawBlob = await canvasToBlob();
+  const tagged = addPngMetadata(new Uint8Array(await rawBlob.arrayBuffer()), { pixelsPerInch });
+  const blob = new Blob([tagged], { type: 'image/png' });
   if (preview) {
     await saveCaptureImage({ ...preview, blob });
     return { ok: true, blobUrl: null };
