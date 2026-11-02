@@ -7,6 +7,8 @@ import {
   scaleSliceToCanvas,
   exceedsCanvasLimit,
   CANVAS_DIMENSION_LIMIT,
+  computeCaptureHeight,
+  limitPageCount,
 } from '../src/shared/geometry.js';
 
 test('computeSliceOffsets splits evenly when scrollHeight is a multiple of innerHeight', () => {
@@ -71,4 +73,28 @@ test('exceedsCanvasLimit is false under the ceiling and true at/above it', () =>
   assert.equal(exceedsCanvasLimit(CANVAS_DIMENSION_LIMIT, 10000), false);
   assert.equal(exceedsCanvasLimit(CANVAS_DIMENSION_LIMIT + 1, 10000), true);
   assert.equal(exceedsCanvasLimit(10000, 40000), true);
+});
+
+test('computeCaptureHeight returns the full scrollHeight when there is no limit', () => {
+  assert.equal(computeCaptureHeight(5000, 1000, 'fullPage', 0), 5000);
+});
+
+test('computeCaptureHeight caps a full-page capture at maxScreenshots viewports', () => {
+  assert.equal(computeCaptureHeight(20000, 1000, 'fullPage', 6), 6000);
+  assert.equal(computeSliceOffsets(computeCaptureHeight(20000, 1000, 'fullPage', 6), 1000).length, 6);
+});
+
+test('computeCaptureHeight does not extend a page shorter than the limit', () => {
+  assert.equal(computeCaptureHeight(2500, 1000, 'fullPage', 6), 2500);
+});
+
+test('computeCaptureHeight uses the viewport height in viewport mode regardless of limit', () => {
+  assert.equal(computeCaptureHeight(20000, 1000, 'viewport', 6), 1000);
+  assert.equal(computeCaptureHeight(20000, 1000, 'viewport', 0), 1000);
+});
+
+test('limitPageCount caps PDF pages only when a limit is set', () => {
+  assert.equal(limitPageCount(20, 6), 6);
+  assert.equal(limitPageCount(3, 6), 3);
+  assert.equal(limitPageCount(20, 0), 20);
 });

@@ -1,4 +1,5 @@
 import { MessageType } from '../shared/messages.js';
+import { saveCaptureImage } from '../shared/capture-store.js';
 import * as pdfjsLib from '../vendor/pdfjs/pdf.min.mjs';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('src/vendor/pdfjs/pdf.worker.min.mjs');
@@ -19,7 +20,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         .catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
     case MessageType.STITCH_FINALIZE:
-      finalize()
+      finalize(message.preview)
         .then((result) => sendResponse(result))
         .catch((error) => sendResponse({ error: error.message }));
       return true;
@@ -29,7 +30,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         .catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
     case MessageType.PDF_RENDER_PAGE:
-      renderPdfPage(message.pageNumber, message.scale)
+      renderPdfPage(message.pageNumber, message.scale, message.preview)
         .then((result) => sendResponse(result))
         .catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
@@ -44,7 +45,7 @@ async function openPdf(dataUrl) {
   return { ok: true, numPages: pdfDocument.numPages };
 }
 
-async function renderPdfPage(pageNumber, scale) {
+async function renderPdfPage(pageNumber, scale, preview) {
   const page = await pdfDocument.getPage(pageNumber);
   const viewport = page.getViewport({ scale });
   canvasEl.width = viewport.width;
@@ -54,7 +55,7 @@ async function renderPdfPage(pageNumber, scale) {
   // render loop. An offscreen document is never composited/shown, so rAF
   // callbacks never fire there — the default intent would hang forever.
   await page.render({ canvasContext: ctx, viewport, intent: 'print' }).promise;
-  const { blobUrl } = await finalize();
+  const { blobUrl } = await finalize(preview);
   return { ok: true, blobUrl, width: viewport.width, height: viewport.height };
 }
 
@@ -98,7 +99,7 @@ function loadImage(dataUrl) {
   });
 }
 
-function finalize() {
+function canvasToBlob() {
   return new Promise((resolve, reject) => {
     canvasEl.toBlob((blob) => {
       if (!blob) {
@@ -107,7 +108,19 @@ function finalize() {
         );
         return;
       }
-      resolve({ blobUrl: URL.createObjectURL(blob) });
+      resolve(blob);
     }, 'image/png');
   });
+}
+
+// With `preview` ({ captureId, order, filename }) the PNG is persisted to the
+// capture store for the preview page instead of being handed back as a blob:
+// URL, since that URL dies with this offscreen document.
+async function finalize(preview) {
+  const blob = await canvasToBlob();
+  if (preview) {
+    await saveCaptureImage({ ...preview, blob });
+    return { ok: true, blobUrl: null };
+  }
+  return { ok: true, blobUrl: URL.createObjectURL(blob) };
 }

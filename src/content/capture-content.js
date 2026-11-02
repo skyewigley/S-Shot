@@ -97,9 +97,10 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async function triggerLazyContent() {
+  async function triggerLazyContent(maxY) {
     const { scrollHeight } = document.documentElement;
-    window.scrollTo({ left: 0, top: scrollHeight, behavior: 'instant' });
+    const top = maxY == null ? scrollHeight : Math.min(scrollHeight, maxY);
+    window.scrollTo({ left: 0, top, behavior: 'instant' });
     window.dispatchEvent(new Event('scroll'));
     window.dispatchEvent(new Event('resize'));
     await wait(350);
@@ -108,10 +109,10 @@
     await wait(100);
   }
 
-  async function prepareCapture() {
+  async function prepareCapture(maxY) {
     detectFrozenElements();
     killScrollbars();
-    await triggerLazyContent();
+    await triggerLazyContent(maxY);
     return { ok: true };
   }
 
@@ -141,7 +142,7 @@
         sendResponse(remeasure());
         return false;
       case PREPARE_CAPTURE:
-        prepareCapture().then(sendResponse);
+        prepareCapture(message.maxY).then(sendResponse);
         return true;
       case HIDE_STICKY:
         sendResponse(hideFrozenElements());

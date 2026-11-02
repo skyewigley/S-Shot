@@ -9,6 +9,8 @@ test('DEFAULT_SETTINGS matches the documented schema', () => {
     captureDelayMs: 300,
     exportScale: 1,
     captureMode: 'fullPage',
+  maxScreenshots: 0,
+  viewFirst: false,
   });
 });
 

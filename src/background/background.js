@@ -6,6 +6,8 @@ import {
   computeSourceCrop,
   scaleSliceToCanvas,
   exceedsCanvasLimit,
+  computeCaptureHeight,
+  limitPageCount,
 } from '../shared/geometry.js';
 
 const RESTRICTED_URL_PATTERN = /^(chrome|chrome-extension|edge|about|devtools):\/\//i;
@@ -95,6 +97,16 @@ function buildPdfPageFilename(pattern, tab, pageNumber, totalPages) {
   return `${stem}-page-${page}${ext}`;
 }
 
+// "View first" mode: the offscreen document persists each PNG to the capture
+// store under this id, and the preview tab reads it back from there.
+function openPreviewTab(sourceTab, captureId) {
+  return chrome.tabs.create({
+    url: chrome.runtime.getURL(`src/preview/preview.html?id=${encodeURIComponent(captureId)}`),
+    index: sourceTab.index + 1,
+    openerTabId: sourceTab.id,
+  });
+}
+
 function arrayBufferToDataUrl(buffer, mimeType) {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 0x8000;
@@ -178,27 +190,31 @@ async function runPdfCapture(tabId, tab, capture, settings) {
     throw new Error(openResult?.error || 'Failed to open the PDF for rendering.');
   }
 
-  const totalPages = openResult.numPages;
+  const totalPages = limitPageCount(openResult.numPages, settings.maxScreenshots);
+  const captureId = settings.viewFirst ? crypto.randomUUID() : null;
 
   for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
     checkAborted(capture);
 
+    const filename = buildPdfPageFilename(settings.filenamePattern, tab, pageNumber, totalPages);
     const renderResult = await chrome.runtime.sendMessage({
       type: MessageType.PDF_RENDER_PAGE,
       pageNumber,
       scale: settings.exportScale,
+      preview: captureId ? { captureId, order: pageNumber, filename } : null,
     });
     if (!renderResult?.ok) {
       throw new Error(renderResult?.error || `Failed to render PDF page ${pageNumber}.`);
     }
 
-    const filename = buildPdfPageFilename(settings.filenamePattern, tab, pageNumber, totalPages);
-    const downloadId = await chrome.downloads.download({
-      url: renderResult.blobUrl,
-      filename,
-      saveAs: false,
-    });
-    await waitForDownloadCompletion(downloadId);
+    if (!captureId) {
+      const downloadId = await chrome.downloads.download({
+        url: renderResult.blobUrl,
+        filename,
+        saveAs: false,
+      });
+      await waitForDownloadCompletion(downloadId);
+    }
 
     notifySidePanel({
       type: MessageType.CAPTURE_PROGRESS,
@@ -208,10 +224,15 @@ async function runPdfCapture(tabId, tab, capture, settings) {
     });
   }
 
+  if (captureId) {
+    await openPreviewTab(tab, captureId);
+  }
+
   notifySidePanel({
     type: MessageType.CAPTURE_COMPLETE,
     tabId,
     filename: `${totalPages} page${totalPages === 1 ? '' : 's'} as PNG`,
+    previewed: Boolean(captureId),
   });
 }
 
@@ -241,19 +262,28 @@ async function runCapture(tabId) {
       return;
     }
 
+    const initialHeight = computeCaptureHeight(
+      initialGeometry.scrollHeight,
+      initialGeometry.innerHeight,
+      settings.captureMode,
+      settings.maxScreenshots,
+    );
     const initialCanvas = computeCanvasDimensions(
       initialGeometry.scrollWidth,
-      initialGeometry.scrollHeight,
+      initialHeight,
       initialGeometry.devicePixelRatio,
       settings.exportScale,
     );
     if (exceedsCanvasLimit(initialCanvas.width, initialCanvas.height)) {
-      throw new Error(
-        `Page too tall to capture: ${initialGeometry.scrollHeight}px, limit ~32,767px.`,
-      );
+      throw new Error(`Page too tall to capture: ${initialHeight}px, limit ~32,767px.`);
     }
 
-    await sendToTab(tabId, { type: MessageType.PREPARE_CAPTURE });
+    // With a screenshot limit, only pre-load lazy content down to the part
+    // of the page that will actually be captured.
+    await sendToTab(tabId, {
+      type: MessageType.PREPARE_CAPTURE,
+      maxY: settings.maxScreenshots > 0 ? initialHeight : null,
+    });
     checkAborted(capture);
 
     // Re-measure after the lazy-load pre-pass: content that loaded during
@@ -263,8 +293,12 @@ async function runCapture(tabId) {
     const geometry = await sendToTab(tabId, { type: MessageType.REMEASURE });
     checkAborted(capture);
 
-    const effectiveHeight =
-      settings.captureMode === 'viewport' ? geometry.innerHeight : geometry.scrollHeight;
+    const effectiveHeight = computeCaptureHeight(
+      geometry.scrollHeight,
+      geometry.innerHeight,
+      settings.captureMode,
+      settings.maxScreenshots,
+    );
     const canvas = computeCanvasDimensions(
       geometry.scrollWidth,
       effectiveHeight,
@@ -322,19 +356,36 @@ async function runCapture(tabId) {
       });
     }
 
-    const finalizeResult = await chrome.runtime.sendMessage({ type: MessageType.STITCH_FINALIZE });
+    const filename = buildFilename(settings.filenamePattern, tab);
+    const captureId = settings.viewFirst ? crypto.randomUUID() : null;
+
+    const finalizeResult = await chrome.runtime.sendMessage({
+      type: MessageType.STITCH_FINALIZE,
+      preview: captureId ? { captureId, order: 1, filename } : null,
+    });
     if (finalizeResult?.error) {
       throw new Error(finalizeResult.error);
     }
-    const { blobUrl } = finalizeResult;
 
     await sendToTab(tabId, { type: MessageType.RESTORE });
 
-    const filename = buildFilename(settings.filenamePattern, tab);
-    const downloadId = await chrome.downloads.download({ url: blobUrl, filename, saveAs: false });
-    await waitForDownloadCompletion(downloadId);
+    if (captureId) {
+      await openPreviewTab(tab, captureId);
+    } else {
+      const downloadId = await chrome.downloads.download({
+        url: finalizeResult.blobUrl,
+        filename,
+        saveAs: false,
+      });
+      await waitForDownloadCompletion(downloadId);
+    }
 
-    notifySidePanel({ type: MessageType.CAPTURE_COMPLETE, tabId, filename });
+    notifySidePanel({
+      type: MessageType.CAPTURE_COMPLETE,
+      tabId,
+      filename,
+      previewed: Boolean(captureId),
+    });
   } catch (error) {
     await sendToTab(tabId, { type: MessageType.RESTORE }).catch(() => {});
     notifySidePanel({ type: MessageType.CAPTURE_ERROR, tabId, message: error.message });

@@ -4,6 +4,8 @@ export const DEFAULT_SETTINGS = {
   captureDelayMs: 300,
   exportScale: 1,
   captureMode: 'fullPage',
+  maxScreenshots: 0,
+  viewFirst: false,
 };
 
 function sanitizeFilenamePart(value) {

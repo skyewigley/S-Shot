@@ -15,6 +15,8 @@ const fields = {
   captureDelayMs: document.getElementById('captureDelayMs'),
   exportScale: document.getElementById('exportScale'),
   captureMode: document.getElementById('captureMode'),
+  maxScreenshots: document.getElementById('maxScreenshots'),
+  viewFirst: document.getElementById('viewFirst'),
 };
 
 let currentTabId = null;
@@ -52,6 +54,8 @@ async function populateSettings() {
   fields.captureDelayMs.value = settings.captureDelayMs;
   fields.exportScale.value = String(settings.exportScale);
   fields.captureMode.value = settings.captureMode;
+  fields.maxScreenshots.value = settings.maxScreenshots;
+  fields.viewFirst.checked = settings.viewFirst;
 }
 
 function wireSettingsPersistence() {
@@ -62,6 +66,8 @@ function wireSettingsPersistence() {
       captureDelayMs: Number(fields.captureDelayMs.value),
       exportScale: Number(fields.exportScale.value),
       captureMode: fields.captureMode.value,
+      maxScreenshots: Math.max(0, Math.floor(Number(fields.maxScreenshots.value) || 0)),
+      viewFirst: fields.viewFirst.checked,
     });
   for (const field of Object.values(fields)) {
     field.addEventListener('change', persist);
@@ -83,7 +89,10 @@ chrome.runtime.onMessage.addListener((message) => {
       progress: { step: message.step, total: message.total },
     });
   } else if (message.type === MessageType.CAPTURE_COMPLETE) {
-    setStatus({ icon: CHECK_ICON, text: `Saved ${message.filename}` });
+    setStatus({
+      icon: CHECK_ICON,
+      text: message.previewed ? `Opened ${message.filename} in a new tab` : `Saved ${message.filename}`,
+    });
     captureBtn.disabled = false;
   } else if (message.type === MessageType.CAPTURE_ERROR) {
     setStatus({ icon: ERROR_ICON, text: `Error: ${message.message}` });

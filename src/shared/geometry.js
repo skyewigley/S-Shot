@@ -39,3 +39,17 @@ export const CANVAS_DIMENSION_LIMIT = 32767;
 export function exceedsCanvasLimit(width, height, limit = CANVAS_DIMENSION_LIMIT) {
   return width > limit || height > limit;
 }
+
+// Height (CSS px) of the region that will actually be captured. A positive
+// maxScreenshots caps a full-page capture at that many viewport-sized
+// slices; 0 means no limit.
+export function computeCaptureHeight(scrollHeight, innerHeight, captureMode, maxScreenshots) {
+  if (captureMode === 'viewport') return innerHeight;
+  if (maxScreenshots > 0) return Math.min(scrollHeight, maxScreenshots * innerHeight);
+  return scrollHeight;
+}
+
+// Number of PDF pages to render given the screenshot limit (0 = no limit).
+export function limitPageCount(totalPages, maxScreenshots) {
+  return maxScreenshots > 0 ? Math.min(totalPages, maxScreenshots) : totalPages;
+}
