@@ -1,6 +1,6 @@
 import { MessageType } from '../shared/messages.js';
 import { saveCaptureImage } from '../shared/capture-store.js';
-import { addPngMetadata, PDF_POINTS_PER_INCH } from '../shared/png-metadata.js';
+import { addPngMetadata, CSS_PIXELS_PER_INCH, PDF_POINTS_PER_INCH } from '../shared/png-metadata.js';
 import * as pdfjsLib from '../vendor/pdfjs/pdf.min.mjs';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('src/vendor/pdfjs/pdf.worker.min.mjs');
@@ -9,7 +9,7 @@ const canvasEl = document.getElementById('stitch-canvas');
 let ctx = null;
 let pdfDocument = null;
 // DPI written into the PNG's pHYs chunk so editors size it correctly.
-let pixelsPerInch = 96;
+let pixelsPerInch = CSS_PIXELS_PER_INCH;
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case MessageType.STITCH_FINALIZE:
       finalize(message.preview)
         .then((result) => sendResponse(result))
-        .catch((error) => sendResponse({ error: error.message }));
+        .catch((error) => sendResponse({ ok: false, error: error.message }));
       return true;
     case MessageType.PDF_OPEN:
       openPdf(message.dataUrl)

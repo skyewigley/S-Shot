@@ -1,8 +1,6 @@
 import { loadSettings, saveSettings } from '../shared/settings.js';
 import { MessageType } from '../shared/messages.js';
-
-const RESTRICTED_URL_PATTERN = /^(chrome|chrome-extension|edge|about|devtools):\/\//i;
-const WEB_STORE_PATTERN = /^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/i;
+import { isCapturableUrl, RESTRICTED_PAGE_MESSAGE } from '../shared/restricted-urls.js';
 
 const captureBtn = document.getElementById('capture-btn');
 const statusTextEl = document.getElementById('status-text');
@@ -41,10 +39,9 @@ function setStatus({ icon = '', text = '', progress = null }) {
 async function refreshActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   currentTabId = tab?.id ?? null;
-  const restricted =
-    !tab || RESTRICTED_URL_PATTERN.test(tab.url) || WEB_STORE_PATTERN.test(tab.url);
-  captureBtn.disabled = restricted;
-  captureBtn.title = restricted ? "This page can't be captured by an extension." : '';
+  const capturable = isCapturableUrl(tab?.url);
+  captureBtn.disabled = !capturable;
+  captureBtn.title = capturable ? '' : RESTRICTED_PAGE_MESSAGE;
 }
 
 async function populateSettings() {
@@ -91,7 +88,7 @@ chrome.runtime.onMessage.addListener((message) => {
   } else if (message.type === MessageType.CAPTURE_COMPLETE) {
     setStatus({
       icon: CHECK_ICON,
-      text: message.previewed ? `Opened ${message.filename} in a new tab` : `Saved ${message.filename}`,
+      text: message.previewed ? `Opened ${message.summary} in a new tab` : `Saved ${message.summary}`,
     });
     captureBtn.disabled = false;
   } else if (message.type === MessageType.CAPTURE_ERROR) {

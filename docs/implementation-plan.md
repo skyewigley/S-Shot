@@ -1,5 +1,9 @@
 # Full-Page Screenshot Chrome Extension Implementation Plan
 
+> **Historical document.** This is the original implementation plan, written before coding started
+> (September 2026). The shipped code has since evolved — see the [README](../README.md)
+> for current behaviour and project structure.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a Manifest V3 Chrome extension ("K-shot") that captures an entire scrollable page as one stitched PNG and saves it straight to Downloads, replacing a removed third-party tool, using only `activeTab`/`scripting`/`downloads`/`storage`/`sidePanel`/`offscreen` permissions (no `debugger`).
@@ -8,7 +12,7 @@
 
 **Tech Stack:** Vanilla JS (ES modules for background/offscreen/side panel; classic script for the content script — see Task 6 note), Manifest V3 Chrome extension APIs, Node's built-in `node:test` runner for unit tests. No build step, no npm dependencies.
 
-**Spec:** `docs/superpowers/specs/2026-09-09-full-page-screenshot-extension-design.md`
+**Spec:** [`docs/design-spec.md`](design-spec.md)
 
 ## Global Constraints
 

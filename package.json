@@ -3,10 +3,17 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Full-page screenshot Chrome extension",
+  "description": "Chrome extension that captures an entire web page or PDF as a high-quality PNG.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "dev": "tailwindcss -i src/styles/tailwind.input.css -o src/styles/tailwind.css --watch",
+    "build:css": "tailwindcss -i src/styles/tailwind.input.css -o src/styles/tailwind.css --minify",
+    "build": "npm run build:css && node scripts/package-extension.mjs",
     "test": "node --test \"tests/**/*.test.js\"",
-    "build:css": "tailwindcss -i src/sidepanel/input.css -o src/sidepanel/tailwind.css --minify"
+    "version": "node scripts/sync-manifest-version.mjs && git add manifest.json"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

@@ -8,18 +8,6 @@ export const DEFAULT_SETTINGS = {
   viewFirst: false,
 };
 
-function sanitizeFilenamePart(value) {
-  return String(value).replace(/[\\/:*?"<>|]/g, '_');
-}
-
-export function expandFilenamePattern(pattern, { domain, date, time, title }) {
-  return pattern
-    .replaceAll('{domain}', sanitizeFilenamePart(domain))
-    .replaceAll('{date}', date)
-    .replaceAll('{time}', time)
-    .replaceAll('{title}', sanitizeFilenamePart(title ?? ''));
-}
-
 export async function loadSettings() {
   const stored = await chrome.storage.local.get(DEFAULT_SETTINGS);
   return { ...DEFAULT_SETTINGS, ...stored };

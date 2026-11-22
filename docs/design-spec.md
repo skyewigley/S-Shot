@@ -1,5 +1,9 @@
 # Full-Page Screenshot Chrome Extension — Design Spec
 
+> **Historical document.** This is the original design spec, written before coding started
+> (September 2026). The shipped code has since evolved — see the [README](../README.md)
+> for current behaviour and project structure.
+
 **Date:** 2026-09-09
 **Status:** Approved, pending implementation plan
 
