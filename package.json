@@ -1,9 +1,15 @@
 {
-  "name": "k-shot",
+  "name": "s-shot",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Chrome extension that captures an entire web page or PDF as a high-quality PNG.",
+  "description": "Full-page screenshot Chrome extension: capture any web page or PDF as one crisp, print-ready PNG.",
+  "author": "Skye Wigley",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skyewigley/S-Shot.git"
+  },
+  "homepage": "https://github.com/skyewigley/S-Shot#readme",
   "license": "MIT",
   "engines": {
     "node": ">=22"

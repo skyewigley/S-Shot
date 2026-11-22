@@ -158,7 +158,7 @@ interface Settings {
 ## File/folder structure
 
 ```
-K-shot/
+S-Shot/
 ├── manifest.json
 ├── icons/
 │   ├── icon16.png

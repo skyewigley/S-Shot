@@ -36,5 +36,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" dist/*.zip \
-            --title "K-shot $GITHUB_REF_NAME" \
+            --title "S-Shot $GITHUB_REF_NAME" \
             --generate-notes

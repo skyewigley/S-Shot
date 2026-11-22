@@ -4,7 +4,7 @@
 // persisted here, where the preview page (same extension origin) can read
 // them back after the offscreen document is gone.
 
-const DB_NAME = 'kshot-captures';
+const DB_NAME = 'sshot-captures';
 const DB_VERSION = 1;
 const STORE = 'images';
 const CAPTURE_ID_INDEX = 'captureId';

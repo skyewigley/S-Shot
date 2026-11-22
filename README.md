@@ -1,8 +1,8 @@
-# K-shot
+# S-Shot
 
 **Full-page screenshots for Chrome: any web page or PDF, captured as one crisp PNG.**
 
-K-shot is a lightweight Manifest V3 Chrome extension that scrolls through a page, captures every
+S-Shot is a lightweight Manifest V3 Chrome extension that scrolls through a page, captures every
 viewport and stitches them into a single image. It has no tracking, no account, no remote code, and
 nothing leaves your machine.
 
@@ -31,7 +31,7 @@ nothing leaves your machine.
 
 ### From a release (recommended)
 
-1. Download `k-shot-vX.Y.Z.zip` from the [latest release](../../releases/latest) and unzip it.
+1. Download `s-shot-vX.Y.Z.zip` from the [latest release](../../releases/latest) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select the unzipped folder.
 
@@ -40,17 +40,17 @@ nothing leaves your machine.
 Requires Node.js 22 or newer.
 
 ```bash
-git clone <this-repo-url> k-shot
-cd k-shot
+git clone https://github.com/skyewigley/S-Shot.git
+cd S-Shot
 npm ci
 npm run build
 ```
 
-Then load the `dist/k-shot` folder via **Load unpacked**, as above.
+Then load the `dist/s-shot` folder via **Load unpacked**, as above.
 
 ## Usage
 
-1. Click the K-shot icon in the toolbar to open the side panel.
+1. Click the S-Shot icon in the toolbar to open the side panel.
 2. Press **Capture full page**.
 3. Don't touch the tab while the progress bar runs. The PNG is saved to Downloads, or opened in a
    preview tab if **View first** is on.
@@ -69,7 +69,7 @@ Then load the `dist/k-shot` folder via **Load unpacked**, as above.
 
 ## Permissions & privacy
 
-K-shot runs entirely locally. It makes no network requests except re-fetching a PDF you are already
+S-Shot runs entirely locally. It makes no network requests except re-fetching a PDF you are already
 viewing so it can render it.
 
 | Permission                  | Why it's needed                                                        |
@@ -78,7 +78,7 @@ viewing so it can render it.
 | `<all_urls>` host access    | Required by `captureVisibleTab` to screenshot the page you're on.      |
 | `downloads`                 | Save the PNG to your Downloads folder.                                 |
 | `storage`                   | Remember your settings.                                                |
-| `sidePanel`                 | Show the K-shot UI in Chrome's side panel.                             |
+| `sidePanel`                 | Show the S-Shot UI in Chrome's side panel.                             |
 | `offscreen`                 | Stitch images on a canvas (service workers have no DOM).               |
 
 The content script is injected **on demand only**. It never runs on pages you haven't asked to
@@ -138,10 +138,10 @@ Side panel ──START_CAPTURE──▶ Service worker ──MEASURE / SCROLL_TO
 npm ci          # install dev dependencies (Tailwind CLI)
 npm run dev     # rebuild Tailwind CSS on change; load the repo root via "Load unpacked"
 npm test        # run unit tests
-npm run build   # compile CSS, stage dist/k-shot/ and write dist/k-shot-vX.Y.Z.zip
+npm run build   # compile CSS, stage dist/s-shot/ and write dist/s-shot-vX.Y.Z.zip
 ```
 
-After editing source files, click the reload icon on the K-shot card in `chrome://extensions`.
+After editing source files, click the reload icon on the S-Shot card in `chrome://extensions`.
 
 ## Releasing
 
@@ -153,7 +153,7 @@ git push --follow-tags       # the v* tag triggers the Release workflow
 ```
 
 The [Release workflow](.github/workflows/release.yml) checks that the tag matches the manifest
-version, runs the tests, builds the extension and attaches `k-shot-vX.Y.Z.zip` to a new GitHub
+version, runs the tests, builds the extension and attaches `s-shot-vX.Y.Z.zip` to a new GitHub
 Release with auto-generated notes. The same zip can be uploaded to the Chrome Web Store as-is.
 
 ## Known limitations
@@ -169,6 +169,10 @@ Vanilla JavaScript (ES modules), Tailwind CSS v4, pdf.js, and Node's built-in te
 runtime dependencies. The project was planned and built with [Claude Code](https://claude.com/claude-code),
 working from a written [design spec](docs/design-spec.md) and
 [implementation plan](docs/implementation-plan.md).
+
+## Author
+
+Designed and built by **Skye Wigley**.
 
 ## License
 

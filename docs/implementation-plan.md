@@ -6,7 +6,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a Manifest V3 Chrome extension ("K-shot") that captures an entire scrollable page as one stitched PNG and saves it straight to Downloads, replacing a removed third-party tool, using only `activeTab`/`scripting`/`downloads`/`storage`/`sidePanel`/`offscreen` permissions (no `debugger`).
+**Goal:** Build a Manifest V3 Chrome extension ("S-Shot") that captures an entire scrollable page as one stitched PNG and saves it straight to Downloads, replacing a removed third-party tool, using only `activeTab`/`scripting`/`downloads`/`storage`/`sidePanel`/`offscreen` permissions (no `debugger`).
 
 **Architecture:** Five components wired by a small typed-message protocol: a native `chrome.sidePanel` UI, a background service-worker orchestrator, an on-demand-injected content script that measures/scrolls/freezes the page, and an offscreen document that stitches captured slices into a canvas and exports a PNG blob. Pure geometry/filename math lives in `src/shared/` so it can be unit tested with Node outside a browser; everything DOM/Chrome-API-dependent is verified by manual load-unpacked testing.
 
@@ -30,7 +30,7 @@
 ## File Structure
 
 ```
-K-shot/
+S-Shot/
 ├── package.json                    # "type": "module", npm test script
 ├── manifest.json
 ├── icons/
@@ -81,7 +81,7 @@ K-shot/
 
 ```json
 {
-  "name": "k-shot",
+  "name": "s-shot",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -104,7 +104,7 @@ node_modules/
 ```json
 {
   "manifest_version": 3,
-  "name": "K-shot Full Page Screenshot",
+  "name": "S-Shot Full Page Screenshot",
   "version": "1.0.0",
   "description": "Capture an entire page as a single PNG, saved directly to Downloads.",
   "permissions": ["activeTab", "scripting", "downloads", "storage", "sidePanel", "offscreen"],
@@ -116,7 +116,7 @@ node_modules/
     "default_path": "src/sidepanel/sidepanel.html"
   },
   "action": {
-    "default_title": "K-shot: open side panel"
+    "default_title": "S-Shot: open side panel"
   },
   "icons": {
     "16": "icons/icon16.png",
@@ -734,7 +734,7 @@ function detectFrozenElements() {
 
 function hideFrozenElements() {
   for (const el of frozenElements) {
-    el.dataset.kshotPrevVisibility = el.style.visibility;
+    el.dataset.sshotPrevVisibility = el.style.visibility;
     el.style.visibility = 'hidden';
   }
   return { ok: true };
@@ -742,8 +742,8 @@ function hideFrozenElements() {
 
 function restoreFrozenElements() {
   for (const el of frozenElements) {
-    el.style.visibility = el.dataset.kshotPrevVisibility || '';
-    delete el.dataset.kshotPrevVisibility;
+    el.style.visibility = el.dataset.sshotPrevVisibility || '';
+    delete el.dataset.sshotPrevVisibility;
   }
   frozenElements = [];
 }
@@ -1072,7 +1072,7 @@ git commit -m "feat: add background service worker orchestrating the capture flo
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
-    <h1>K-shot</h1>
+    <h1>S-Shot</h1>
     <button id="capture-btn">Capture full page</button>
     <p id="status"></p>
 
@@ -1267,7 +1267,7 @@ Expected: PASS — all tests from Tasks 2–4 (17 tests total: 9 geometry + 5 se
 
 - [ ] **Step 2: Load the extension unpacked**
 
-Open `chrome://extensions`, enable Developer Mode, click "Load unpacked", select the `K-shot/` project root. Confirm:
+Open `chrome://extensions`, enable Developer Mode, click "Load unpacked", select the `S-Shot/` project root. Confirm:
 - The extension loads with no manifest errors shown on the extensions page.
 - Its icon appears in the toolbar.
 - Opening the service worker's inspector (via "service worker" link on the extensions page) shows no console errors.

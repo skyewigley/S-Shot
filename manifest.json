@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "K-shot Full Page Screenshot",
+  "name": "S-Shot: Full Page Screenshot",
   "version": "1.0.0",
-  "description": "Capture an entire page as a single PNG, saved directly to Downloads.",
+  "description": "Capture any web page or PDF as one crisp, full-length PNG. Private and local-only, with no tracking and no accounts.",
   "permissions": ["activeTab", "scripting", "downloads", "storage", "sidePanel", "offscreen"],
   "host_permissions": ["<all_urls>"],
   "background": {
@@ -13,7 +13,7 @@
     "default_path": "src/sidepanel/sidepanel.html"
   },
   "action": {
-    "default_title": "K-shot: open side panel"
+    "default_title": "S-Shot: open side panel"
   },
   "icons": {
     "16": "icons/icon16.png",

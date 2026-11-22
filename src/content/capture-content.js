@@ -3,7 +3,7 @@
 // (non-module) scripts, so the shared ES module can't be imported here —
 // these are duplicated literals, not a separate source of truth.
 (function () {
-  if (window.__kshotContentScriptLoaded) {
+  if (window.__sshotContentScriptLoaded) {
     // Manifest V3 does not reset a frame's isolated world between
     // chrome.scripting.executeScript calls unless the frame navigates, so
     // re-injecting this file into an already-loaded tab would otherwise
@@ -12,7 +12,7 @@
     // alive and listening.
     return;
   }
-  window.__kshotContentScriptLoaded = true;
+  window.__sshotContentScriptLoaded = true;
 
   const MEASURE = 'measure';
   const REMEASURE = 'remeasure';
@@ -65,7 +65,7 @@
 
   function hideFrozenElements() {
     for (const el of frozenElements) {
-      el.dataset.kshotPrevVisibility = el.style.visibility;
+      el.dataset.sshotPrevVisibility = el.style.visibility;
       el.style.visibility = 'hidden';
     }
     return { ok: true };
@@ -73,8 +73,8 @@
 
   function restoreFrozenElements() {
     for (const el of frozenElements) {
-      el.style.visibility = el.dataset.kshotPrevVisibility || '';
-      delete el.dataset.kshotPrevVisibility;
+      el.style.visibility = el.dataset.sshotPrevVisibility || '';
+      delete el.dataset.sshotPrevVisibility;
     }
     frozenElements = [];
   }
